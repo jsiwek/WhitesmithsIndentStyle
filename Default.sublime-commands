@@ -1,0 +1,6 @@
+[
+    { "caption": "Whitesmiths Indent Style Toggle",
+      "command": "toggle_setting",
+      "args": {"setting": "whitesmiths_enable"}
+    },
+]

@@ -1,0 +1,4 @@
+{
+    "whitesmiths_enable": true,
+    "whitesmiths_reindent_scopes": ["source.cs", "source.c++"],
+}
