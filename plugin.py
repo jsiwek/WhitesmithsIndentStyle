@@ -18,6 +18,13 @@ def get_start_of_line_text(view, until):
     line_region.b = until
     return view.substr(line_region)
 
+def text_allows_attached_brace(text):
+    for keyword in ("class", "struct"):
+        if keyword in text:
+            return True
+
+    return False
+
 class WhitesmithsEnterBlockCommand(sublime_plugin.TextCommand):
     def run(self, edit):
         cursor_position = get_cursor(self.view)
@@ -114,23 +121,42 @@ class WhitesmithsReindentCommand(sublime_plugin.TextCommand):
             self.view.run_command('reindent', {'single_line': True})
             return
 
-        indent_text = get_start_of_line_text(self.view, brace_position)
+        close_indent_text = get_start_of_line_text(self.view, brace_position)
+
+        self.view.run_command('move_to', {'to': 'brackets'})
+        open_brace_position = get_cursor(self.view)
+        open_line_text = get_start_of_line_text(self.view, open_brace_position)
 
         self.view.sel().clear()
         self.view.sel().add(sublime.Region(cursor_position))
 
-        if not indent_text:
+        if text_allows_attached_brace(open_line_text):
+            open_indent_text = ""
+
+            for char in open_line_text:
+                if not char.isspace():
+                    break;
+
+                open_indent_text += char
+
+            open_indent_text += open_indent_text
+            self.view.insert(edit, cursor_position, open_indent_text)
+            State.reindents[self.view.buffer_id()] = get_cursor(self.view)
+            focus_view_on_cursor(self.view)
+            return
+
+        if not close_indent_text:
             self.view.insert(edit, cursor_position, '\t')
             State.reindents[self.view.buffer_id()] = get_cursor(self.view)
             focus_view_on_cursor(self.view)
             return
 
-        if not indent_text.isspace():
+        if not close_indent_text.isspace():
             self.view.run_command('reindent', {'single_line': True})
             focus_view_on_cursor(self.view)
             return
 
-        self.view.insert(edit, cursor_position, indent_text)
+        self.view.insert(edit, cursor_position, close_indent_text)
         State.reindents[self.view.buffer_id()] = get_cursor(self.view)
         focus_view_on_cursor(self.view)
 
