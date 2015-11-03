@@ -140,7 +140,7 @@ class WhitesmithsReindentCommand(sublime_plugin.TextCommand):
                 open_indent_text += char
 
             if open_indent_text:
-                open_indent_text += open_indent_text
+                open_indent_text += '\t'
                 self.view.insert(edit, cursor_position, open_indent_text)
                 State.reindents[self.view.buffer_id()] = get_cursor(self.view)
                 focus_view_on_cursor(self.view)
