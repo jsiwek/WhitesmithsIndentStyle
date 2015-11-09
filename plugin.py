@@ -41,15 +41,10 @@ class WhitesmithsEnterBlockCommand(sublime_plugin.TextCommand):
             self.view.run_command('reindent', {'single_line': True})
             self.view.run_command('unindent')
 
-def focus_view_on_cursor(view):
-    # TODO: using move_to command with long blocks can cause the view to
-    # scroll, so center on the cursor to workaround that. (Using move_to
-    # was just easier than writing the code to find balanced braces).
-    view.run_command('center_on_cursor')
-
 class WhitesmithsExitBlockCommand(sublime_plugin.TextCommand):
     def run(self, edit):
         close_brace_position = get_cursor(self.view)
+        current_viewport = self.view.viewport_position()
         self.view.run_command('move_to', {'to': 'brackets'})
         open_brace_position = get_cursor(self.view)
 
@@ -66,6 +61,7 @@ class WhitesmithsExitBlockCommand(sublime_plugin.TextCommand):
 
         self.view.sel().clear()
         self.view.sel().add(sublime.Region(close_brace_position))
+        self.view.set_viewport_position(current_viewport)
 
         newline = '\n'
 
@@ -74,7 +70,6 @@ class WhitesmithsExitBlockCommand(sublime_plugin.TextCommand):
 
         self.view.insert(edit, close_brace_position, newline)
         State.reindents[self.view.buffer_id()] = get_cursor(self.view)
-        focus_view_on_cursor(self.view)
 
 class WhitesmithsEnterCommand(sublime_plugin.TextCommand):
     def run(self, edit):
@@ -114,6 +109,7 @@ class WhitesmithsReindentCommand(sublime_plugin.TextCommand):
             self.view.run_command('reindent', {'single_line': True})
             return
 
+        current_viewport = self.view.viewport_position()
         self.view.run_command('move_to', {'to': 'brackets'})
         brace_position = get_cursor(self.view)
 
@@ -129,6 +125,7 @@ class WhitesmithsReindentCommand(sublime_plugin.TextCommand):
 
         self.view.sel().clear()
         self.view.sel().add(sublime.Region(cursor_position))
+        self.view.set_viewport_position(current_viewport)
 
         if text_allows_attached_brace(open_line_text):
             open_indent_text = ""
@@ -143,23 +140,19 @@ class WhitesmithsReindentCommand(sublime_plugin.TextCommand):
                 open_indent_text += '\t'
                 self.view.insert(edit, cursor_position, open_indent_text)
                 State.reindents[self.view.buffer_id()] = get_cursor(self.view)
-                focus_view_on_cursor(self.view)
                 return
 
         if not close_indent_text:
             self.view.insert(edit, cursor_position, '\t')
             State.reindents[self.view.buffer_id()] = get_cursor(self.view)
-            focus_view_on_cursor(self.view)
             return
 
         if not close_indent_text.isspace():
             self.view.run_command('reindent', {'single_line': True})
-            focus_view_on_cursor(self.view)
             return
 
         self.view.insert(edit, cursor_position, close_indent_text)
         State.reindents[self.view.buffer_id()] = get_cursor(self.view)
-        focus_view_on_cursor(self.view)
 
 class WhitesmithsListener(sublime_plugin.EventListener):
     def on_selection_modified(self, view):
